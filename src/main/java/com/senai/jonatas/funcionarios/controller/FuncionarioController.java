@@ -2,6 +2,7 @@ package com.senai.jonatas.funcionarios.controller;
 
 import com.senai.jonatas.funcionarios.dto.FuncionarioRequest;
 import com.senai.jonatas.funcionarios.dto.FuncionarioResponse;
+import com.senai.jonatas.funcionarios.service.FuncionarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -11,9 +12,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/funcionarios")
+@CrossOrigin("*")
 public class FuncionarioController {
 
     private final FuncionarioService service;
+
+    public FuncionarioController(FuncionarioService service) {
+        this.service = service;
+    }
 
     // GET /api/funcionarios?cargo=Analista&ativo=true
     @GetMapping

@@ -11,6 +11,12 @@ public final class FuncionarioMapper {
 
     public static Funcionario toEntity(FuncionarioRequest req) {
         return Funcionario.builder()
+                .nome(req.nome())
+                .email(req.email())
+                .cargo(req.cargo())
+                .salario(req.salario())
+                .dataAdmissao(req.dataAdmissao())
+                .ativo(true)
                 .build();
     }
 

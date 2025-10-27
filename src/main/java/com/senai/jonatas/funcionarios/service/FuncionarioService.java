@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 
+@Service
 public class FuncionarioService {
 
     private final FuncionarioRepository repository;
@@ -70,11 +71,19 @@ public class FuncionarioService {
         var existente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado"));
 
+        if (!Boolean.TRUE.equals(existente.getAtivo())) {
+            throw new BusinessException("Apenas funcionários ativos podem ser editados");
+        }
 
         // E-mail: não pode virar um valor já existente em outro registro
         if (!existente.getEmail().equalsIgnoreCase(req.email()) &&
             repository.existsByEmailIgnoreCase(req.email())) {
             throw new BusinessException("E-mail informado já está em uso por outro funcionário");
+        }
+
+        // Salário não pode reduzir
+        if (req.salario().compareTo(existente.getSalario()) < 0) {
+            throw new BusinessException("Salário não pode ser reduzido");
         }
 
         aplicarAtualizacao(req, existente, false);
@@ -87,7 +96,8 @@ public class FuncionarioService {
         var existente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado"));
         existente.setAtivo(false);
-        return FuncionarioMapper.toResponse(existente);
+        var salvo = repository.save(existente);
+        return FuncionarioMapper.toResponse(salvo);
     }
 
     private void aplicarAtualizacao(FuncionarioRequest req, Funcionario entidade, boolean reativacao) {
