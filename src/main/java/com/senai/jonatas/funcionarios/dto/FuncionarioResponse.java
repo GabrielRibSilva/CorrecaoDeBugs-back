@@ -10,5 +10,8 @@ public record FuncionarioResponse(
         String cargo,
         BigDecimal salario,
         LocalDate dataAdmissao,
-        Boolean ativo
+        Boolean ativo,
+        Long departamentoId,
+        String departamentoNome,
+        String departamentoSigla
 ) {}

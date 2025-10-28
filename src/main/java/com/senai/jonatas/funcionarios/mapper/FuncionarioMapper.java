@@ -30,9 +30,14 @@ public final class FuncionarioMapper {
     }
 
     public static FuncionarioResponse toResponse(Funcionario e) {
+        Long deptoId = (e.getDepartamento() != null) ? e.getDepartamento().getId() : null;
+        String deptoNome = (e.getDepartamento() != null) ? e.getDepartamento().getNome() : null;
+        String deptoSigla = (e.getDepartamento() != null) ? e.getDepartamento().getSigla() : null;
+
         return new FuncionarioResponse(
                 e.getId(), e.getNome(), e.getEmail(),
-                e.getCargo(), e.getSalario(), e.getDataAdmissao(), e.getAtivo()
+                e.getCargo(), e.getSalario(), e.getDataAdmissao(), e.getAtivo(),
+                deptoId, deptoNome, deptoSigla
         );
     }
 }

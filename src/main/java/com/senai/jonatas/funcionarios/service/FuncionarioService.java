@@ -2,6 +2,7 @@ package com.senai.jonatas.funcionarios.service;
 
 import com.senai.jonatas.funcionarios.dto.FuncionarioRequest;
 import com.senai.jonatas.funcionarios.dto.FuncionarioResponse;
+import com.senai.jonatas.funcionarios.entity.Departamento;
 import com.senai.jonatas.funcionarios.exceptions.*;
 import com.senai.jonatas.funcionarios.mapper.FuncionarioMapper;
 import com.senai.jonatas.funcionarios.entity.Funcionario;
@@ -17,8 +18,11 @@ public class FuncionarioService {
 
     private final FuncionarioRepository repository;
 
-    public FuncionarioService(FuncionarioRepository repository) {
+    private final DepartamentoService departamentoService;
+
+    public FuncionarioService(FuncionarioRepository repository, DepartamentoService departamentoService) {
         this.repository = repository;
+        this.departamentoService = departamentoService;
     }
 
     public List<FuncionarioResponse> listar(String cargo, Boolean ativo) {
@@ -46,6 +50,8 @@ public class FuncionarioService {
     @Transactional
     public Result<FuncionarioResponse> cadastrar(FuncionarioRequest req) {
         validarRegrasComuns(req);
+        Departamento depto = departamentoService.findDepartamentoById(req.departamentoId());
+        validarDepartamentoAtivo(depto);
 
         var existenteOpt = repository.findByEmailIgnoreCase(req.email());
         if (existenteOpt.isPresent()) {
@@ -53,13 +59,21 @@ public class FuncionarioService {
             if (Boolean.TRUE.equals(existente.getAtivo())) {
                 throw new EmailConflictException("E-mail já cadastrado");
             }
-            // Reativar
-            aplicarAtualizacao(req, existente, true);
+            aplicarAtualizacao(req, existente, depto, true);
             var salvo = repository.save(existente);
             return Result.reactivated(FuncionarioMapper.toResponse(salvo));
         }
 
-        var novo = FuncionarioMapper.toEntity(req);
+        var novo = Funcionario.builder()
+                .nome(req.nome())
+                .email(req.email())
+                .cargo(req.cargo())
+                .salario(req.salario())
+                .dataAdmissao(req.dataAdmissao())
+                .ativo(true)
+                .departamento(depto)
+                .build();
+
         var salvo = repository.save(novo);
         return Result.created(FuncionarioMapper.toResponse(salvo));
     }
@@ -67,6 +81,7 @@ public class FuncionarioService {
     @Transactional
     public FuncionarioResponse atualizar(Long id, FuncionarioRequest req) {
         validarRegrasComuns(req);
+        Departamento depto = departamentoService.findDepartamentoById(req.departamentoId());
 
         var existente = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Funcionário não encontrado"));
@@ -75,18 +90,16 @@ public class FuncionarioService {
             throw new BusinessException("Apenas funcionários ativos podem ser editados");
         }
 
-        // E-mail: não pode virar um valor já existente em outro registro
         if (!existente.getEmail().equalsIgnoreCase(req.email()) &&
-            repository.existsByEmailIgnoreCase(req.email())) {
+                repository.existsByEmailIgnoreCase(req.email())) {
             throw new BusinessException("E-mail informado já está em uso por outro funcionário");
         }
 
-        // Salário não pode reduzir
         if (req.salario().compareTo(existente.getSalario()) < 0) {
             throw new BusinessException("Salário não pode ser reduzido");
         }
 
-        aplicarAtualizacao(req, existente, false);
+        aplicarAtualizacao(req, existente, depto, false);
         var salvo = repository.save(existente);
         return FuncionarioMapper.toResponse(salvo);
     }
@@ -100,14 +113,21 @@ public class FuncionarioService {
         return FuncionarioMapper.toResponse(salvo);
     }
 
-    private void aplicarAtualizacao(FuncionarioRequest req, Funcionario entidade, boolean reativacao) {
+    private void aplicarAtualizacao(FuncionarioRequest req, Funcionario entidade, Departamento depto, boolean reativacao) {
         entidade.setNome(req.nome());
         entidade.setCargo(req.cargo());
         entidade.setSalario(req.salario());
         entidade.setDataAdmissao(req.dataAdmissao());
         entidade.setEmail(req.email());
+        entidade.setDepartamento(depto);
         if (reativacao) {
             entidade.setAtivo(true);
+        }
+    }
+
+    private void validarDepartamentoAtivo(Departamento depto) {
+        if (!Boolean.TRUE.equals(depto.getAtivo())) {
+            throw new BusinessException("Não é possível vincular funcionário a um departamento inativo.");
         }
     }
 

@@ -23,6 +23,11 @@ public class ApiExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), req);
     }
 
+    @ExceptionHandler(NomeConflictException.class)
+    public ResponseEntity<ApiError> handleNomeConflict(NomeConflictException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req);
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiError> handleBusiness(BusinessException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req);

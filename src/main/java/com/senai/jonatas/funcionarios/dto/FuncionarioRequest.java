@@ -23,6 +23,9 @@ public record FuncionarioRequest(
 
         @NotNull(message = "Data de admissão é obrigatória")
         @PastOrPresent(message = "Data de admissão não pode ser futura")
-        LocalDate dataAdmissao
+        LocalDate dataAdmissao,
+
+        @NotNull(message = "Departamento é obrigatório")
+        Long departamentoId
 ) {
 }
